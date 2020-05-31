@@ -1,0 +1,12 @@
+﻿startup_message: "Launching...hello from config"
+
+mqtt:
+  clientid: HomeAssistantComputerSensors
+  broker: 192.168.1.111
+  broker_port: 1883
+  certificate: hacs.crt
+  username: sensor
+  password: nitefire
+
+hass:
+  uniqueid_base_prefix: computer_1_
