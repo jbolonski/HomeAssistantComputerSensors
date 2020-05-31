@@ -9,4 +9,4 @@ mqtt:
   password: nitefire
 
 hass:
-  uniqueid_base_prefix: computer_1_
+  uniqueid_base_prefix: mycomputer_

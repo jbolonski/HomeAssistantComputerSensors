@@ -9,7 +9,8 @@ namespace HomeAssistantComputerSensors.Hass.Component
 {
     class ComponentBase
     {
-        protected readonly string componentname = "base";
+        protected readonly string componentType = "";
+        protected string device_class = "";
 
         private readonly Dictionary<string, object> states = new Dictionary<string, object>();
 
@@ -25,6 +26,8 @@ namespace HomeAssistantComputerSensors.Hass.Component
         {
             object_id = objectId;
             unique_id = string.Concat(objectIdPrefix,objectId);
+            componentType = this.GetType().Name.ToLower();
+            device_class = componentType;
         }
 
         public void SetState(string key, object value)
@@ -40,14 +43,14 @@ namespace HomeAssistantComputerSensors.Hass.Component
 
         public override string ToString()
         {
-            return componentname;
+            return componentType;
         }
 
         public string StateTopic
         {
             get
             {
-                string topic = string.Format("homeassistant/{0}/{1}/state", componentname, object_id);
+                string topic = string.Format("homeassistant/{0}/{1}/state", componentType, unique_id);
 
                 return topic;
             }
@@ -64,6 +67,7 @@ namespace HomeAssistantComputerSensors.Hass.Component
 
         public string DeleteComponentPayload => "";
 
+  
         public List<ComponentConfiguration> GetComponentConfiguration()
         {
             List<ComponentConfiguration> Configurations = new List<ComponentConfiguration>();
@@ -72,17 +76,17 @@ namespace HomeAssistantComputerSensors.Hass.Component
             foreach (var state in this.states)
             {
                 string stateName = state.Key;
-                string componentType = this.GetType().Name.ToLower();
 
-                payload.Add("device_class", componentType);
-                payload.Add("name", this.object_id);
-                payload.Add("state_topic", String.Format("homeassistant/{0}/{1}/state", componentType, this.object_id));
+                if ( this.device_class.ToLower() !="none" ) { payload.Add("device_class", this.device_class); }
+
+                payload.Add("name", this.unique_id);
+                payload.Add("state_topic", StateTopic );
                 payload.Add("value_template",String.Format("{{{{ value_json.{0} }}}}", stateName) );
 
                 ComponentConfiguration config = new ComponentConfiguration
                 {
                     StateName = stateName,
-                    Topic = String.Format("homeassistant/{0}/{1}{2}/config", componentType, this.object_id, stateName),
+                    Topic = String.Format("homeassistant/{0}/{1}{2}/config", componentType, this.unique_id, stateName),
                     Payload = JsonConvert.SerializeObject(payload.Values)
                 };
                 Configurations.Add(config);

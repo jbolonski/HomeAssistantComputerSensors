@@ -20,8 +20,7 @@ namespace HomeAssistantComputerSensors
         static Configuration.BaseConfiguration configuration;
 
         static async Task Main(string[] args)
-        {
-            
+        {            
             var configinput = File.ReadAllText("configuration.yaml");
 
             var deserializer = new YamlDotNet.Serialization.Deserializer();
@@ -31,8 +30,9 @@ namespace HomeAssistantComputerSensors
             Console.WriteLine(configuration.hass.uniqueid_base_prefix);
             Console.WriteLine(configuration.mqtt.broker);
 
-            //await SendTestMessage(configuration.mqtt);
+            
             SendComponentConfiguration(configuration.mqtt);
+            await SendTestMessage(configuration.mqtt);
 
             Console.WriteLine("--done--");
 
@@ -56,7 +56,6 @@ namespace HomeAssistantComputerSensors
 
             mqttClient.MqttMsgPublished += MqttClient_MqttMsgPublished;
             mqttClient.Connect(mqttconfig.clientid, mqttconfig.username, mqttconfig.password);
-            //mqttClient.Publish(topic, Encoding.ASCII.GetBytes(payload), MqttMsgBase.QOS_LEVEL_EXACTLY_ONCE, false);
 
             foreach (var config in configurationList)
             {
@@ -66,10 +65,6 @@ namespace HomeAssistantComputerSensors
 
                 mqttClient.Publish(config.Topic, Encoding.ASCII.GetBytes(config.Payload), MqttMsgBase.QOS_LEVEL_EXACTLY_ONCE, false);
             }
-
-            //string topic = computersensor.StateTopic;
-            //string payload = computersensor.Payload;
-
         }
 
         static async Task SendTestMessage(Configuration.Mqtt mqttconfig)
