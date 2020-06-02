@@ -11,6 +11,7 @@ using YamlDotNet.Serialization.NamingConventions;
 using YamlDotNet.Serialization.TypeInspectors;
 using System.Threading.Tasks;
 using System.Runtime.CompilerServices;
+using System.Net.NetworkInformation;
 
 namespace HomeAssistantComputerSensors
 {
@@ -18,8 +19,10 @@ namespace HomeAssistantComputerSensors
     {
         static MqttClient mqttClient;
         static Configuration.BaseConfiguration configuration;
+        static string testname = "hardware_memory";
 
-        static async Task Main(string[] args)
+
+        static void Main(string[] args)
         {            
             var configinput = File.ReadAllText("configuration.yaml");
 
@@ -29,17 +32,16 @@ namespace HomeAssistantComputerSensors
             Console.WriteLine(configuration.startup_message);
             Console.WriteLine(configuration.hass.uniqueid_base_prefix);
             Console.WriteLine(configuration.mqtt.broker);
-
             
-            SendComponentConfiguration(configuration.mqtt);
-            await SendTestMessage(configuration.mqtt);
+            SendComponentConfiguration(configuration.mqtt);            
+            SendTestMessage(configuration.mqtt);
+            //SendComponentDelete(configuration.mqtt);
 
             Console.WriteLine("--done--");
 
         }
 
-
-        static void SendComponentConfiguration(Configuration.Mqtt mqttconfig)
+        static void SendComponentDelete(Configuration.Mqtt mqttconfig)
         {
             mqttClient = new MqttClient(mqttconfig.broker);
 
@@ -47,12 +49,27 @@ namespace HomeAssistantComputerSensors
 
             double mem = computer.GetMemoryUsage();
 
-            Hass.Component.Sensor computersensor = new Hass.Component.Sensor(configuration.hass.uniqueid_base_prefix, "computer_sensor");
-            computersensor.SetState("memory", mem);
-            computersensor.SetState("hostname", Dns.GetHostName());
+            Hass.Component.Sensor computersensor = new Hass.Component.Sensor(configuration.hass.uniqueid_base_prefix, testname);
 
             var configurationList = computersensor.GetComponentConfiguration();
 
+            mqttClient.MqttMsgPublished += MqttClient_MqttMsgPublished;
+            mqttClient.Connect(mqttconfig.clientid, mqttconfig.username, mqttconfig.password);
+
+            foreach (var config in configurationList)
+            {
+                Console.WriteLine("Topic = {0}", config.Topic);
+                mqttClient.Publish(config.Topic, Encoding.ASCII.GetBytes(""), MqttMsgBase.QOS_LEVEL_EXACTLY_ONCE, false);
+            }
+        }
+
+        static void SendComponentConfiguration(Configuration.Mqtt mqttconfig)
+        {
+            mqttClient = new MqttClient(mqttconfig.broker);
+
+            Hass.Component.Sensor computersensor = new Hass.Component.Sensor(configuration.hass.uniqueid_base_prefix, testname);
+
+            var configurationList = computersensor.GetComponentConfiguration();
 
             mqttClient.MqttMsgPublished += MqttClient_MqttMsgPublished;
             mqttClient.Connect(mqttconfig.clientid, mqttconfig.username, mqttconfig.password);
@@ -67,22 +84,19 @@ namespace HomeAssistantComputerSensors
             }
         }
 
-        static async Task SendTestMessage(Configuration.Mqtt mqttconfig)
+        static void SendTestMessage(Configuration.Mqtt mqttconfig)
         {
             mqttClient = new MqttClient(mqttconfig.broker);
             
             Sensor.Computer computer = new Sensor.Computer();
             
-            //double cpu = await computer.GetCpuUsage();
-            double mem = computer.GetMemoryUsage();
-
-            Hass.Component.Sensor computersensor = new Hass.Component.Sensor(configuration.hass.uniqueid_base_prefix,"computer_sensor");            
-            computersensor.SetState("memory", mem);
-            computersensor.SetState("hostname", Dns.GetHostName() );
+            Hass.Component.Sensor computersensor = new Hass.Component.Sensor(configuration.hass.uniqueid_base_prefix, testname);            
+            computersensor.SetState( computer.GetMemoryUsage() );            
 
             string topic = computersensor.StateTopic;
             string payload = computersensor.Payload;
-
+            Console.WriteLine(topic);
+            Console.WriteLine(payload);
 
             mqttClient.MqttMsgPublished += MqttClient_MqttMsgPublished;
             mqttClient.Connect(mqttconfig.clientid, mqttconfig.username, mqttconfig.password);
