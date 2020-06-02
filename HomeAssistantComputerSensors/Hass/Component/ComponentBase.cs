@@ -91,6 +91,7 @@ namespace HomeAssistantComputerSensors.Hass.Component
                 payload.Add("name", string.Format("{0}_{1}", unique_id, stateName));
                 payload.Add("state_topic", StateTopic);
                 payload.Add("value_template", String.Format("{{{{ value_json.{0} }}}}", stateName));
+                payload.Add("unique_id", String.Format("{0}{1}{2}", componentType, this.unique_id, stateName));
 
                 ComponentConfiguration config = new ComponentConfiguration
                 {
