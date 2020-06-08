@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace HomeAssistantComputerSensors.Hass.Component
+﻿namespace HomeAssistantComputerSensors.Hass.Component
 {
     class Binary_Sensor : ComponentBase
     {

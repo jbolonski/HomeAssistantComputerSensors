@@ -10,3 +10,9 @@ mqtt:
 
 hass:
   uniqueid_base_prefix: mycomputer_
+
+services:
+  - name: EpicGamesLauncher.exe
+    description: "Epic Games Launcher"
+  - name: devenv.exe
+    description: "Visual Studio"

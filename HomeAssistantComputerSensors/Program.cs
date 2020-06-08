@@ -1,17 +1,9 @@
-﻿using System;
+﻿using HomeAssistantComputerSensors.Hass.Component;
+using System;
 using System.IO;
-using System.Net;
-using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using uPLibrary.Networking.M2Mqtt;
 using uPLibrary.Networking.M2Mqtt.Messages;
-using YamlDotNet;
-using YamlDotNet.Serialization.NamingConventions;
-using YamlDotNet.Serialization.TypeInspectors;
-using System.Threading.Tasks;
-using System.Runtime.CompilerServices;
-using System.Net.NetworkInformation;
 
 namespace HomeAssistantComputerSensors
 {
@@ -19,8 +11,7 @@ namespace HomeAssistantComputerSensors
     {
         static MqttClient mqttClient;
         static Configuration.BaseConfiguration configuration;
-        static string testname = "hardware_memory";
-
+        static System.Timers.Timer _timer;
 
         static void Main(string[] args)
         {            
@@ -32,56 +23,60 @@ namespace HomeAssistantComputerSensors
             Console.WriteLine(configuration.startup_message);
             Console.WriteLine(configuration.hass.uniqueid_base_prefix);
             Console.WriteLine(configuration.mqtt.broker);
-            
-            SendComponentConfiguration(configuration.mqtt);            
+          
+            SendComponentConfiguration(configuration.mqtt);
             SendTestMessage(configuration.mqtt);
+            _timer = new System.Timers.Timer(30 * 1000);
+            _timer.Elapsed += _timer_Elapsed;
+            _timer.Start();
+
             //SendComponentDelete(configuration.mqtt);
+
+            Console.WriteLine("PRESS [ANY KEY] TO QUIT");
+            Console.ReadKey();
 
             Console.WriteLine("--done--");
 
         }
 
+        private static void _timer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
+        {
+            SendTestMessage(configuration.mqtt);
+        }
+
+
+        // Delete is the Configuration Topic with no Payload
         static void SendComponentDelete(Configuration.Mqtt mqttconfig)
         {
             mqttClient = new MqttClient(mqttconfig.broker);
-
-            Sensor.Computer computer = new Sensor.Computer();
-
-            double mem = computer.GetMemoryUsage();
-
-            Hass.Component.Sensor computersensor = new Hass.Component.Sensor(configuration.hass.uniqueid_base_prefix, testname);
-
-            var configurationList = computersensor.GetComponentConfiguration();
-
             mqttClient.MqttMsgPublished += MqttClient_MqttMsgPublished;
             mqttClient.Connect(mqttconfig.clientid, mqttconfig.username, mqttconfig.password);
 
-            foreach (var config in configurationList)
-            {
-                Console.WriteLine("Topic = {0}", config.Topic);
-                mqttClient.Publish(config.Topic, Encoding.ASCII.GetBytes(""), MqttMsgBase.QOS_LEVEL_EXACTLY_ONCE, false);
-            }
+            Hass.Component.Sensor computersensor = new Hass.Component.Sensor(configuration.hass.uniqueid_base_prefix, "hardware_memory");
+            var config = computersensor.GetComponentConfiguration();
+            PrintConfig(config);
+            mqttClient.Publish(config.Topic, Encoding.ASCII.GetBytes(""), MqttMsgBase.QOS_LEVEL_EXACTLY_ONCE, false);            
+
         }
 
         static void SendComponentConfiguration(Configuration.Mqtt mqttconfig)
         {
             mqttClient = new MqttClient(mqttconfig.broker);
-
-            Hass.Component.Sensor computersensor = new Hass.Component.Sensor(configuration.hass.uniqueid_base_prefix, testname);
-
-            var configurationList = computersensor.GetComponentConfiguration();
-
             mqttClient.MqttMsgPublished += MqttClient_MqttMsgPublished;
             mqttClient.Connect(mqttconfig.clientid, mqttconfig.username, mqttconfig.password);
 
-            foreach (var config in configurationList)
-            {
-                Console.WriteLine("StateName = {0}", config.StateName);
-                Console.WriteLine("Topic = {0}", config.Topic);
-                Console.WriteLine("Payload = {0}", config.Payload);
+            Hass.Component.Sensor computermemorysensor = new Hass.Component.Sensor(configuration.hass.uniqueid_base_prefix, "hardware_memory", "Mb");
+            var config = computermemorysensor.GetComponentConfiguration();
+            PrintConfig(config);
 
-                mqttClient.Publish(config.Topic, Encoding.ASCII.GetBytes(config.Payload), MqttMsgBase.QOS_LEVEL_EXACTLY_ONCE, false);
-            }
+            mqttClient.Publish(config.Topic, Encoding.ASCII.GetBytes(config.Payload), MqttMsgBase.QOS_LEVEL_EXACTLY_ONCE, false);            
+        }
+
+        static void PrintConfig(ComponentConfiguration config)
+        {
+            Console.WriteLine("StateName = {0}", config.StateName);
+            Console.WriteLine("Topic = {0}", config.Topic);
+            Console.WriteLine("Payload = {0}", config.Payload);
         }
 
         static void SendTestMessage(Configuration.Mqtt mqttconfig)
@@ -90,7 +85,7 @@ namespace HomeAssistantComputerSensors
             
             Sensor.Computer computer = new Sensor.Computer();
             
-            Hass.Component.Sensor computersensor = new Hass.Component.Sensor(configuration.hass.uniqueid_base_prefix, testname);            
+            Hass.Component.Sensor computersensor = new Hass.Component.Sensor(configuration.hass.uniqueid_base_prefix, "hardware_memory");            
             computersensor.SetState( computer.GetMemoryUsage() );            
 
             string topic = computersensor.StateTopic;

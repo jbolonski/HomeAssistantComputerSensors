@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace HomeAssistantComputerSensors.Configuration
+﻿namespace HomeAssistantComputerSensors.Configuration
 {
     class Mqtt
     {

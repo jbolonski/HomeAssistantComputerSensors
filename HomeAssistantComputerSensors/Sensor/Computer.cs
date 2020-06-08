@@ -50,7 +50,9 @@ namespace HomeAssistantComputerSensors.Sensor
                 totalSize += proc.WorkingSet64 / 1024.0;
             }
 
-            return totalSize;
+            var totalSizeInMB = totalSize / 1024.0;
+
+            return totalSizeInMB;
         }
     }
 }
